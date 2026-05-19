@@ -1,4 +1,4 @@
-import { Settings, Sparkles, PanelLeftOpen, Bug } from 'lucide-react';
+import { BarChart3, Settings, Sparkles, PanelLeftOpen, Bug } from 'lucide-react';
 import type { TFunction } from 'i18next';
 
 const DISCORD_INVITE_URL = 'https://discord.gg/buxwujPNRE';
@@ -15,6 +15,7 @@ function DiscordIcon({ className }: { className?: string }) {
 type SidebarCollapsedProps = {
   onExpand: () => void;
   onShowSettings: () => void;
+  onShowAnalytics?: () => void;
   updateAvailable: boolean;
   onShowVersionModal: () => void;
   t: TFunction;
@@ -23,6 +24,7 @@ type SidebarCollapsedProps = {
 export default function SidebarCollapsed({
   onExpand,
   onShowSettings,
+  onShowAnalytics,
   updateAvailable,
   onShowVersionModal,
   t,
@@ -40,6 +42,18 @@ export default function SidebarCollapsed({
       </button>
 
       <div className="nav-divider my-1 w-6" />
+
+      {/* Analytics */}
+      {onShowAnalytics && (
+        <button
+          onClick={onShowAnalytics}
+          className="group flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-accent/80"
+          aria-label="Open Analytics"
+          title="Analytics"
+        >
+          <BarChart3 className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
+        </button>
+      )}
 
       {/* Settings */}
       <button

@@ -143,6 +143,7 @@ type SidebarContentProps = {
   currentVersion: string;
   onShowVersionModal: () => void;
   onShowSettings: () => void;
+  onShowAnalytics?: () => void;
   projectListProps: SidebarProjectListProps;
   t: TFunction;
 };
@@ -179,6 +180,7 @@ export default function SidebarContent({
   currentVersion,
   onShowVersionModal,
   onShowSettings,
+  onShowAnalytics,
   projectListProps,
   t,
 }: SidebarContentProps) {
@@ -520,6 +522,7 @@ export default function SidebarContent({
         currentVersion={currentVersion}
         onShowVersionModal={onShowVersionModal}
         onShowSettings={onShowSettings}
+        onShowAnalytics={onShowAnalytics}
         t={t}
       />
     </div>
