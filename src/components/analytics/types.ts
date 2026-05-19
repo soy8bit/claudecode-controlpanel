@@ -63,3 +63,14 @@ export interface CostsResponse {
   totalCost: number;
   cacheReadTokens: number;
 }
+
+export interface ToolRow {
+  tool_name: string;
+  calls: number;
+  errors: number;
+}
+
+export interface ToolsResponse {
+  range: { from: number; to: number };
+  tools: ToolRow[];
+}

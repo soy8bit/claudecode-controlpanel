@@ -7,6 +7,7 @@ import OverviewTab from './tabs/OverviewTab';
 import ProjectsTab from './tabs/ProjectsTab';
 import AgentsTab from './tabs/AgentsTab';
 import CostsTab from './tabs/CostsTab';
+import ToolsTab from './tabs/ToolsTab';
 import type { AnalyticsTab, RangePreset } from '../types';
 
 interface Props {
@@ -35,17 +36,13 @@ export default function AnalyticsView({ onClose }: Props) {
               <button
                 key={t.id}
                 type="button"
-                disabled={!['overview', 'projects', 'agents', 'costs'].includes(t.id)}
                 onClick={() => setTab(t.id)}
                 className={
                   'rounded px-3 py-1 text-sm transition-colors ' +
                   (tab === t.id
                     ? 'bg-muted font-medium'
-                    : ['overview', 'projects', 'agents', 'costs'].includes(t.id)
-                      ? 'text-muted-foreground hover:bg-muted'
-                      : 'text-muted-foreground/40 cursor-not-allowed')
+                    : 'text-muted-foreground hover:bg-muted')
                 }
-                title={['overview', 'projects', 'agents', 'costs'].includes(t.id) ? '' : 'Coming in next milestone'}
               >
                 {t.label}
               </button>
@@ -64,6 +61,7 @@ export default function AnalyticsView({ onClose }: Props) {
         {tab === 'projects' && <ProjectsTab range={range} />}
         {tab === 'agents' && <AgentsTab range={range} />}
         {tab === 'costs' && <CostsTab range={range} />}
+        {tab === 'tools' && <ToolsTab range={range} />}
       </div>
     </div>
   );

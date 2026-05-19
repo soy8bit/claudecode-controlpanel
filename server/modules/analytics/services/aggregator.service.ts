@@ -131,6 +131,22 @@ export const aggregatorService = {
     `).all(range.from, range.to);
   },
 
+  tools(range: DateRange) {
+    const db = getConnection();
+    return db.prepare(`
+      SELECT
+        tool_name,
+        COUNT(*) AS calls,
+        SUM(is_error) AS errors
+      FROM analytics_events
+      WHERE type = 'tool_use'
+        AND tool_name IS NOT NULL
+        AND ts >= ? AND ts < ?
+      GROUP BY tool_name
+      ORDER BY calls DESC
+    `).all(range.from, range.to);
+  },
+
   costs(range: DateRange) {
     const db = getConnection();
     const byModel = db.prepare(`

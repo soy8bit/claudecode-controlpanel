@@ -53,6 +53,11 @@ router.get('/costs', asyncHandler(async (req: Request, res: Response) => {
   res.json(createApiSuccessResponse({ range, ...aggregatorService.costs(range) }));
 }));
 
+router.get('/tools', asyncHandler(async (req: Request, res: Response) => {
+  const range = readRange(req);
+  res.json(createApiSuccessResponse({ range, tools: aggregatorService.tools(range) }));
+}));
+
 router.get('/health', asyncHandler(async (_req: Request, res: Response) => {
   const db = getConnection();
   const log = db.prepare(`
