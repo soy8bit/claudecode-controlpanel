@@ -24,15 +24,20 @@ const schedule = (filePath: string) => {
   }, DEBOUNCE_MS));
 };
 
+const isJsonl = (filePath: string) => filePath.endsWith('.jsonl');
+
 export async function startProjectsWatcher(): Promise<void> {
   if (watcher) return;
-  watcher = watch(`${projectsRoot}/**/*.jsonl`, {
+  // Watch the directory recursively and filter by extension at the callback level.
+  // We deliberately avoid a glob string here because mixing Windows-style backslashes
+  // with forward-slash glob patterns silently broke discovery on Windows.
+  watcher = watch(projectsRoot, {
     ignoreInitial: false,
     awaitWriteFinish: { stabilityThreshold: 500, pollInterval: 200 },
   });
   watcher
-    .on('add', schedule)
-    .on('change', schedule)
+    .on('add', (filePath) => { if (isJsonl(filePath)) schedule(filePath); })
+    .on('change', (filePath) => { if (isJsonl(filePath)) schedule(filePath); })
     .on('error', (err) => console.error('[analytics] watcher error', err));
   console.log('[analytics] watcher started for', projectsRoot);
 }
