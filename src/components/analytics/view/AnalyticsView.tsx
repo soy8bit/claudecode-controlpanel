@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 
 import DateRangePicker from '../components/DateRangePicker';
 import OverviewTab from './tabs/OverviewTab';
+import ProjectsTab from './tabs/ProjectsTab';
 import type { AnalyticsTab, RangePreset } from '../types';
 
 interface Props {
@@ -32,17 +33,17 @@ export default function AnalyticsView({ onClose }: Props) {
               <button
                 key={t.id}
                 type="button"
-                disabled={t.id !== 'overview'}
+                disabled={!['overview', 'projects'].includes(t.id)}
                 onClick={() => setTab(t.id)}
                 className={
                   'rounded px-3 py-1 text-sm transition-colors ' +
                   (tab === t.id
                     ? 'bg-muted font-medium'
-                    : t.id === 'overview'
+                    : ['overview', 'projects'].includes(t.id)
                       ? 'text-muted-foreground hover:bg-muted'
                       : 'text-muted-foreground/40 cursor-not-allowed')
                 }
-                title={t.id === 'overview' ? '' : 'Coming in next milestone'}
+                title={['overview', 'projects'].includes(t.id) ? '' : 'Coming in next milestone'}
               >
                 {t.label}
               </button>
@@ -58,6 +59,7 @@ export default function AnalyticsView({ onClose }: Props) {
       </header>
       <div className="flex-1 overflow-auto">
         {tab === 'overview' && <OverviewTab range={range} />}
+        {tab === 'projects' && <ProjectsTab range={range} />}
       </div>
     </div>
   );

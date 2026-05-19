@@ -21,3 +21,18 @@ export interface OverviewResponse {
 }
 
 export type AnalyticsTab = 'overview' | 'projects' | 'agents' | 'costs' | 'tools';
+
+export interface ProjectRow {
+  id: string;
+  name: string;
+  path: string;
+  last_seen: number;
+  sessions: number;
+  tokens: number;
+  cost: number;
+}
+
+export interface ProjectsResponse {
+  range: { from: number; to: number };
+  projects: ProjectRow[];
+}

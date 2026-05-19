@@ -81,4 +81,21 @@ export const aggregatorService = {
       sparkline,
     };
   },
+
+  projects(range: DateRange) {
+    const db = getConnection();
+    return db.prepare(`
+      SELECT
+        p.id, p.name, p.path, p.last_seen,
+        COUNT(s.id) AS sessions,
+        COALESCE(SUM(s.tokens_input + s.tokens_output), 0) AS tokens,
+        COALESCE(SUM(s.estimated_cost_usd), 0) AS cost
+      FROM analytics_projects p
+      LEFT JOIN analytics_sessions s
+        ON s.project_id = p.id AND s.started_at >= ? AND s.started_at < ?
+      GROUP BY p.id
+      HAVING sessions > 0
+      ORDER BY cost DESC
+    `).all(range.from, range.to);
+  },
 };
