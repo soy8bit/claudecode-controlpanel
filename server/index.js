@@ -66,6 +66,7 @@ import geminiRoutes from './routes/gemini.js';
 import pluginsRoutes from './routes/plugins.js';
 import providerRoutes from './modules/providers/provider.routes.js';
 import analyticsRoutes from './modules/analytics/analytics.routes.js';
+import { startProjectsWatcher, stopProjectsWatcher } from './modules/analytics/index.js';
 import { startEnabledPluginServers, stopAllPlugins, getPluginPort } from './utils/plugin-process-manager.js';
 import { initializeDatabase, projectsDb } from './modules/database/index.js';
 import { configureWebPush } from './services/vapid-keys.js';
@@ -1482,6 +1483,11 @@ async function startServer() {
             // Start watching the projects folder for changes
             await initializeSessionsWatcher();
 
+            // Start analytics watcher for ~/.claude/projects/**/*.jsonl
+            startProjectsWatcher().catch((err) => {
+                console.error('[analytics] failed to start watcher', err);
+            });
+
             // Start server-side plugin processes for enabled plugins
             startEnabledPluginServers().catch(err => {
                 console.error('[Plugins] Error during startup:', err.message);
@@ -1491,6 +1497,7 @@ async function startServer() {
         await closeSessionsWatcher();
         // Clean up plugin processes on shutdown
         const shutdownPlugins = async () => {
+            await stopProjectsWatcher();
             await stopAllPlugins();
             process.exit(0);
         };
