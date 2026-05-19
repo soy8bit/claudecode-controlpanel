@@ -98,4 +98,36 @@ export const aggregatorService = {
       ORDER BY cost DESC
     `).all(range.from, range.to);
   },
+
+  agents(range: DateRange) {
+    const db = getConnection();
+    // For each subagent_start, find the matching subagent_end OR the next event
+    // in the same session, and sum token cost / count tool_use events between them.
+    return db.prepare(`
+      WITH starts AS (
+        SELECT id, session_id, ts, agent_name
+        FROM analytics_events
+        WHERE type = 'subagent_start' AND ts >= ? AND ts < ?
+      ),
+      bounded AS (
+        SELECT
+          s.agent_name,
+          s.session_id,
+          s.ts AS start_ts,
+          (SELECT MIN(e.ts) FROM analytics_events e
+             WHERE e.session_id = s.session_id AND e.ts > s.ts AND e.type = 'subagent_end') AS end_ts
+        FROM starts s
+      )
+      SELECT
+        agent_name,
+        COUNT(*) AS invocations,
+        COALESCE(AVG(CASE WHEN end_ts IS NOT NULL THEN end_ts - start_ts END), 0) AS avg_duration_ms,
+        (SELECT COUNT(*) FROM analytics_events e2
+           JOIN starts s2 ON s2.agent_name = bounded.agent_name AND s2.session_id = e2.session_id
+           WHERE e2.type = 'tool_use' AND e2.ts >= s2.ts) AS tool_calls
+      FROM bounded
+      GROUP BY agent_name
+      ORDER BY invocations DESC
+    `).all(range.from, range.to);
+  },
 };

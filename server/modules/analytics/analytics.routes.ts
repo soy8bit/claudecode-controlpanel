@@ -43,6 +43,11 @@ router.get('/projects', asyncHandler(async (req: Request, res: Response) => {
   res.json(createApiSuccessResponse({ range, projects: aggregatorService.projects(range) }));
 }));
 
+router.get('/agents', asyncHandler(async (req: Request, res: Response) => {
+  const range = readRange(req);
+  res.json(createApiSuccessResponse({ range, agents: aggregatorService.agents(range) }));
+}));
+
 router.get('/health', asyncHandler(async (_req: Request, res: Response) => {
   const db = getConnection();
   const log = db.prepare(`

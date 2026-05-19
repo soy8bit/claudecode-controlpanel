@@ -36,3 +36,15 @@ export interface ProjectsResponse {
   range: { from: number; to: number };
   projects: ProjectRow[];
 }
+
+export interface AgentRow {
+  agent_name: string;
+  invocations: number;
+  avg_duration_ms: number;
+  tool_calls: number;
+}
+
+export interface AgentsResponse {
+  range: { from: number; to: number };
+  agents: AgentRow[];
+}
