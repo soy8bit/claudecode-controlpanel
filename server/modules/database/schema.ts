@@ -182,6 +182,7 @@ CREATE INDEX IF NOT EXISTS idx_analytics_events_tool ON analytics_events(tool_na
 CREATE INDEX IF NOT EXISTS idx_analytics_events_agent ON analytics_events(agent_name);
 CREATE INDEX IF NOT EXISTS idx_analytics_sessions_project ON analytics_sessions(project_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_sessions_started ON analytics_sessions(started_at);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_ts_type ON analytics_events(ts, type);
 `;
 
 export const INIT_SCHEMA_SQL = `
