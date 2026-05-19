@@ -48,3 +48,18 @@ export interface AgentsResponse {
   range: { from: number; to: number };
   agents: AgentRow[];
 }
+
+export interface CostsByModel {
+  model: string;
+  tokens_input: number;
+  tokens_output: number;
+  tokens_cache_read: number;
+  tokens_cache_create: number;
+}
+
+export interface CostsResponse {
+  range: { from: number; to: number };
+  byModel: CostsByModel[];
+  totalCost: number;
+  cacheReadTokens: number;
+}

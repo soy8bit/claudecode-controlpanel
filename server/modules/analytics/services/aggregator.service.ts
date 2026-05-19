@@ -130,4 +130,31 @@ export const aggregatorService = {
       ORDER BY invocations DESC
     `).all(range.from, range.to);
   },
+
+  costs(range: DateRange) {
+    const db = getConnection();
+    const byModel = db.prepare(`
+      SELECT
+        COALESCE(e.model, 'unknown') AS model,
+        COALESCE(SUM(e.tokens_input), 0)        AS tokens_input,
+        COALESCE(SUM(e.tokens_output), 0)       AS tokens_output,
+        COALESCE(SUM(e.tokens_cache_read), 0)   AS tokens_cache_read,
+        COALESCE(SUM(e.tokens_cache_create), 0) AS tokens_cache_create
+      FROM analytics_events e
+      WHERE e.ts >= ? AND e.ts < ?
+        AND (e.tokens_input IS NOT NULL OR e.tokens_output IS NOT NULL)
+      GROUP BY model
+      ORDER BY (tokens_input + tokens_output) DESC
+    `).all(range.from, range.to);
+
+    const totals = db.prepare(`
+      SELECT
+        COALESCE(SUM(estimated_cost_usd), 0) AS cost,
+        COALESCE(SUM(tokens_cache_read), 0) AS cache_read_tokens
+      FROM analytics_sessions
+      WHERE started_at >= ? AND started_at < ?
+    `).get(range.from, range.to) as any;
+
+    return { byModel, totalCost: totals.cost, cacheReadTokens: totals.cache_read_tokens };
+  },
 };
