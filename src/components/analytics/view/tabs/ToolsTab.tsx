@@ -12,6 +12,8 @@ export default function ToolsTab({ range }: Props) {
   if (error)     return <div className="p-4 text-destructive">{error}</div>;
   if (isLoading || !data) return <div className="p-4 text-muted-foreground">Loading…</div>;
 
+  if (data.tools.length === 0) return <div className="p-4 text-muted-foreground">No tool activity in this range.</div>;
+
   const max = data.tools.reduce((m, t) => Math.max(m, t.calls), 1);
 
   return (

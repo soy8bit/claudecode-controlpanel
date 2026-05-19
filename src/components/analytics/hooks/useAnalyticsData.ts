@@ -22,6 +22,7 @@ export function useAnalyticsData<T>(endpoint: string, range: string, fromIso?: s
 
   useEffect(() => {
     let cancelled = false;
+    setData(null);
     setIsLoading(true);
     setError(null);
 
