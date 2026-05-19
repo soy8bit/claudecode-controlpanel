@@ -19,6 +19,17 @@ export default function OverviewTab({ range, fromIso, toIso }: OverviewTabProps)
 
   if (error) return <div className="rounded border border-destructive p-4 text-destructive">{error}</div>;
 
+  if (!isLoading && data && data.sessions === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-2 p-8 text-center">
+        <div className="text-base font-medium">No activity in this range</div>
+        <div className="text-sm text-muted-foreground">
+          Start a Claude Code session and come back — the watcher picks it up within a minute.
+        </div>
+      </div>
+    );
+  }
+
   const totalTokens = (data?.tokensInput ?? 0) + (data?.tokensOutput ?? 0);
 
   return (
