@@ -8,6 +8,12 @@ import {
   SESSIONS_TABLE_SCHEMA_SQL,
   USER_NOTIFICATION_PREFERENCES_TABLE_SCHEMA_SQL,
   VAPID_KEYS_TABLE_SCHEMA_SQL,
+  // analytics
+  ANALYTICS_PROJECTS_TABLE_SCHEMA_SQL,
+  ANALYTICS_SESSIONS_TABLE_SCHEMA_SQL,
+  ANALYTICS_EVENTS_TABLE_SCHEMA_SQL,
+  ANALYTICS_INGEST_LOG_TABLE_SCHEMA_SQL,
+  ANALYTICS_INDEXES_SQL,
 } from '@/modules/database/schema.js';
 
 const SQLITE_UUID_SQL = `
@@ -447,6 +453,14 @@ export const runMigrations = (db: Database) => {
     }
 
     db.exec(LAST_SCANNED_AT_SQL);
+
+    // Analytics module tables (additive, prefixed to avoid collisions)
+    db.exec(ANALYTICS_PROJECTS_TABLE_SCHEMA_SQL);
+    db.exec(ANALYTICS_SESSIONS_TABLE_SCHEMA_SQL);
+    db.exec(ANALYTICS_EVENTS_TABLE_SCHEMA_SQL);
+    db.exec(ANALYTICS_INGEST_LOG_TABLE_SCHEMA_SQL);
+    db.exec(ANALYTICS_INDEXES_SQL);
+
     console.log('Database migrations completed successfully');
   } catch (error: any) {
     console.error('Error running migrations:', error.message);

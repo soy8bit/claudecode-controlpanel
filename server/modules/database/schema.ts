@@ -111,6 +111,79 @@ CREATE TABLE IF NOT EXISTS app_config (
 );
 `;
 
+// ---------------------------------------------------------------------------
+// Analytics module schema (additive — never modifies upstream tables)
+// ---------------------------------------------------------------------------
+
+export const ANALYTICS_PROJECTS_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS analytics_projects (
+    id          TEXT PRIMARY KEY NOT NULL,
+    name        TEXT NOT NULL,
+    path        TEXT NOT NULL UNIQUE,
+    first_seen  INTEGER NOT NULL,
+    last_seen   INTEGER NOT NULL
+);
+`;
+
+export const ANALYTICS_SESSIONS_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS analytics_sessions (
+    id                    TEXT PRIMARY KEY NOT NULL,
+    project_id            TEXT REFERENCES analytics_projects(id) ON DELETE CASCADE,
+    started_at            INTEGER NOT NULL,
+    ended_at              INTEGER,
+    model                 TEXT,
+    tokens_input          INTEGER NOT NULL DEFAULT 0,
+    tokens_output         INTEGER NOT NULL DEFAULT 0,
+    tokens_cache_read     INTEGER NOT NULL DEFAULT 0,
+    tokens_cache_create   INTEGER NOT NULL DEFAULT 0,
+    estimated_cost_usd    REAL NOT NULL DEFAULT 0,
+    message_count         INTEGER NOT NULL DEFAULT 0,
+    tool_call_count       INTEGER NOT NULL DEFAULT 0,
+    subagent_count        INTEGER NOT NULL DEFAULT 0,
+    jsonl_path            TEXT NOT NULL,
+    jsonl_mtime           INTEGER NOT NULL,
+    jsonl_size            INTEGER NOT NULL
+);
+`;
+
+export const ANALYTICS_EVENTS_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS analytics_events (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id            TEXT NOT NULL REFERENCES analytics_sessions(id) ON DELETE CASCADE,
+    ts                    INTEGER NOT NULL,
+    type                  TEXT NOT NULL,
+    tool_name             TEXT,
+    agent_name            TEXT,
+    model                 TEXT,
+    tokens_input          INTEGER,
+    tokens_output         INTEGER,
+    tokens_cache_read     INTEGER,
+    tokens_cache_create   INTEGER,
+    duration_ms           INTEGER,
+    is_error              INTEGER NOT NULL DEFAULT 0,
+    raw_offset            INTEGER NOT NULL
+);
+`;
+
+export const ANALYTICS_INGEST_LOG_TABLE_SCHEMA_SQL = `
+CREATE TABLE IF NOT EXISTS analytics_ingest_log (
+    jsonl_path     TEXT PRIMARY KEY NOT NULL,
+    last_offset    INTEGER NOT NULL DEFAULT 0,
+    last_mtime     INTEGER NOT NULL,
+    last_ingest    INTEGER NOT NULL,
+    error_count    INTEGER NOT NULL DEFAULT 0
+);
+`;
+
+export const ANALYTICS_INDEXES_SQL = `
+CREATE INDEX IF NOT EXISTS idx_analytics_events_session ON analytics_events(session_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_ts ON analytics_events(ts);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_tool ON analytics_events(tool_name);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_agent ON analytics_events(agent_name);
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_project ON analytics_sessions(project_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_sessions_started ON analytics_sessions(started_at);
+`;
+
 export const INIT_SCHEMA_SQL = `
 -- Initialize authentication database
 PRAGMA foreign_keys = ON;
