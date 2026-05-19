@@ -1,10 +1,25 @@
 // server/modules/analytics/analytics.routes.ts
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+
 import express, { type Request, type Response } from 'express';
 
 import { aggregatorService, resolveRange } from '@/modules/analytics/services/aggregator.service.js';
 import { ingestJsonlFile } from '@/modules/analytics/services/ingest.service.js';
 import { AppError, asyncHandler, createApiSuccessResponse } from '@/shared/utils.js';
 import { getConnection } from '@/modules/database/connection.js';
+
+const walkJsonl = async (dir: string): Promise<string[]> => {
+  const entries = await fs.readdir(dir, { withFileTypes: true });
+  const result: string[] = [];
+  for (const e of entries) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) result.push(...await walkJsonl(full));
+    else if (e.isFile() && e.name.endsWith('.jsonl')) result.push(full);
+  }
+  return result;
+};
 
 const router = express.Router();
 
@@ -41,16 +56,22 @@ router.get('/health', asyncHandler(async (_req: Request, res: Response) => {
 }));
 
 router.post('/reindex', asyncHandler(async (_req: Request, res: Response) => {
-  // Reindex is wired up by the watcher module — this stub triggers a manual scan
-  // by clearing the ingest log offsets so the next scan re-reads from offset 0.
   const db = getConnection();
   db.exec('UPDATE analytics_ingest_log SET last_offset = 0, last_mtime = 0, error_count = 0');
   db.exec('DELETE FROM analytics_events');
   db.exec('DELETE FROM analytics_sessions');
   db.exec('DELETE FROM analytics_projects');
-  // Caller is expected to wait for the watcher debounce to repopulate;
-  // a full sync endpoint can be added later if needed.
-  res.json(createApiSuccessResponse({ cleared: true }));
+
+  const projectsRoot = path.join(os.homedir(), '.claude', 'projects');
+  let files: string[] = [];
+  try { files = await walkJsonl(projectsRoot); } catch { /* dir doesn't exist */ }
+  const results = await Promise.all(files.map(f => ingestJsonlFile(f)));
+  res.json(createApiSuccessResponse({
+    cleared: true,
+    scanned: files.length,
+    newEvents: results.reduce((s, r) => s + r.newEvents, 0),
+    errors: results.reduce((s, r) => s + r.errors, 0),
+  }));
 }));
 
 export default router;

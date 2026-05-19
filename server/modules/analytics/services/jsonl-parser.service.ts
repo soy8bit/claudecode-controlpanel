@@ -1,7 +1,5 @@
 // server/modules/analytics/services/jsonl-parser.service.ts
-import { createReadStream } from 'node:fs';
-import { stat } from 'node:fs/promises';
-import readline from 'node:readline';
+import { readFile, stat } from 'node:fs/promises';
 
 import type { ParsedEvent, ParsedSessionMeta } from '@/modules/analytics/types.js';
 
@@ -27,8 +25,10 @@ const toUnixMs = (iso: string | undefined): number => {
 };
 
 /**
- * Streams a JSONL session file starting at `startOffset`, tolerating malformed
+ * Reads a JSONL session file starting at `startOffset`, tolerating malformed
  * lines and returning the meta + parsed events plus the final byte offset.
+ * Uses readFile + manual CRLF-aware line splitting to avoid offset drift on
+ * Windows-written files with \r\n line endings.
  */
 export async function parseJsonlFile(filePath: string, startOffset: number): Promise<ParseResult> {
   const stats = await stat(filePath);
@@ -56,26 +56,19 @@ export async function parseJsonlFile(filePath: string, startOffset: number): Pro
     };
   }
 
-  const stream = createReadStream(filePath, { start: startOffset, encoding: 'utf8' });
-  const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
+  // Read the new bytes only (typically << 100MB for a single session file).
+  const buf = await readFile(filePath);
+  const slice = buf.subarray(startOffset);
 
-  let cursor = startOffset;
-
-  for await (const line of rl) {
-    const rawOffset = cursor;
-    // +1 for the newline that readline strips. On Windows files written with
-    // explicit `\n` separators (as our fixtures do) this is exact; if a file
-    // contains CRLF we may be off by 1 per line but the watermark still moves
-    // forward monotonically — incremental ingest stays correct.
-    cursor += Buffer.byteLength(line, 'utf8') + 1;
-
-    if (!line.trim()) continue;
+  // Inner helper — contains all parse/emit logic, called once per line.
+  const processLine = (line: string, rawOffset: number): void => {
+    if (!line) return; // skip empty lines
 
     let raw: RawLine;
     try {
       raw = JSON.parse(line);
     } catch {
-      continue; // skip malformed
+      return; // skip malformed
     }
 
     if (!sessionId && raw.sessionId)   sessionId   = raw.sessionId;
@@ -106,7 +99,7 @@ export async function parseJsonlFile(filePath: string, startOffset: number): Pro
       } else {
         events.push({ ts, type: 'user_message', rawOffset });
       }
-      continue;
+      return;
     }
 
     if (baseType === 'assistant' && message) {
@@ -149,16 +142,44 @@ export async function parseJsonlFile(filePath: string, startOffset: number): Pro
         durationMs:        raw.durationMs,
         rawOffset,
       });
-      continue;
+      return;
     }
 
     if (baseType === 'system') {
       events.push({ ts, type: 'system', rawOffset });
-      continue;
+      return;
     }
 
     // Unknown type — skip silently (tolerant to schema changes).
+  };
+
+  // Manual CRLF-aware line splitting.
+  // We scan for LF (0x0a) bytes. If the byte before LF is CR (0x0d) the line
+  // content ends before the CR. This correctly handles both \n and \r\n files
+  // without offset drift.
+  let lineStart = 0;
+  for (let i = 0; i < slice.length; i++) {
+    if (slice[i] !== 0x0a /* \n */) continue;
+    // Found end of line at index i (LF).
+    // The line content ends before \r if CRLF, otherwise before \n.
+    const lineEnd = i > 0 && slice[i - 1] === 0x0d /* \r */ ? i - 1 : i;
+    const lineBytes = slice.subarray(lineStart, lineEnd);
+    const rawOffset = startOffset + lineStart;
+
+    processLine(lineBytes.toString('utf8'), rawOffset);
+
+    lineStart = i + 1;
   }
+
+  // Handle a final line that has no trailing newline.
+  if (lineStart < slice.length) {
+    const lineBytes = slice.subarray(lineStart);
+    const rawOffset = startOffset + lineStart;
+    processLine(lineBytes.toString('utf8'), rawOffset);
+    lineStart = slice.length;
+  }
+
+  const endOffset = startOffset + lineStart;
 
   return {
     meta: {
@@ -169,6 +190,6 @@ export async function parseJsonlFile(filePath: string, startOffset: number): Pro
       model: sessionModel,
     },
     events,
-    endOffset: cursor,
+    endOffset,
   };
 }

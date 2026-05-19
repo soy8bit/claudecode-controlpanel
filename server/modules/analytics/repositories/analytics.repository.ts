@@ -29,7 +29,7 @@ export const analyticsRepository = {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         ended_at    = excluded.ended_at,
-        model       = COALESCE(analytics_sessions.model, excluded.model),
+        model       = COALESCE(excluded.model, analytics_sessions.model),
         jsonl_mtime = excluded.jsonl_mtime,
         jsonl_size  = excluded.jsonl_size
     `).run(

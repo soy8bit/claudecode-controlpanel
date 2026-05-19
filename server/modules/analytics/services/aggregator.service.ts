@@ -46,7 +46,7 @@ export const aggregatorService = {
     const sparkRows = db.prepare(`
       SELECT
         (e.ts / ?) * ? AS bucket,
-        COUNT(*) AS msgs,
+        COALESCE(SUM(CASE WHEN e.type IN ('user_message','assistant_message') THEN 1 ELSE 0 END), 0) AS msgs,
         COALESCE(SUM(COALESCE(e.tokens_input,0) + COALESCE(e.tokens_output,0)), 0) AS toks
       FROM analytics_events e
       WHERE e.ts >= ? AND e.ts < ?
